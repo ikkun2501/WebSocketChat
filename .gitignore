@@ -143,7 +143,7 @@ cmake-build-*/
 # IntelliJ
 out/
 
-# mpeltonen/sbt-idea plugin
+# mpeltoneng/sbt-idea plugin
 .idea_modules/
 
 # JIRA plugin
