@@ -17,10 +17,16 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
+/**
+ * チャットWebSocketハンドラー
+ */
 public class ChatWebSocketHandler implements WebSocketHandler {
 
     private final Logger logger = LoggerFactory.getLogger(ChatWebSocketHandler.class);
 
+    /**
+     * プロセッサー
+     */
     private final EmitterProcessor<String> processor;
 
     public ChatWebSocketHandler(EmitterProcessor<String> processor) {
@@ -29,11 +35,14 @@ public class ChatWebSocketHandler implements WebSocketHandler {
 
     public Mono<Void> handle(WebSocketSession session) {
 
+        // 受信内容をチャットプロセッサーで購読しておく
         session.receive()
                 .map(WebSocketMessage::getPayloadAsText)
                 .log()
                 .subscribe(processor::onNext);
 
+        // プロセッサーにメッセージが来たら
+        // 購読しているクライアントにメッセージを配信する
         return session.send(processor.map(session::textMessage));
     }
 

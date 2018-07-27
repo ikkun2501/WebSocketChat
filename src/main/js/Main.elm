@@ -6,18 +6,22 @@ import Html.Events exposing (onClick, onInput)
 import WebSocket exposing (..)
 
 
--- MODEL
-
-
+{-| Model
+messages チャットでやりとりしているメッセージのリスト
+message 現在入力しているメッセージ
+-}
 type alias Model =
     { messages : List String
     , message : String
     }
 
 
+{-| initModel
+初期モデル
+-}
 initModel : Model
 initModel =
-    { messages = [ ]
+    { messages = []
     , message = ""
     }
 
@@ -27,65 +31,79 @@ init =
     ( initModel, Cmd.none )
 
 
-
--- MESSAGES
-
-
+{-| Msg
+Send --メッセージ送信
+Input String -- メッセージ入力
+Receive String --メッセージ受信
+-}
 type Msg
     = Send
-    | Change String
-    | NewMessage String
+    | Input String
+    | Receive String
 
 
-
--- VIEW
-
-
+{-| View
+ModelからViewに変換する
+-}
 view : Model -> Html Msg
 view model =
-    --    ul []
-    --        (List.map (\l -> li [] [ text l ]) model)
     div []
-        [ input [ type_ "text", onInput Change, value model.message ] []
+        [ --　入力欄
+          input [ type_ "text", onInput Input, value model.message ] []
+
+        -- 送信ボタン
         , button [ onClick (Send) ] [ text "送信" ]
+
+        --保持しているメッセージの表示
         , model.messages
             |> List.map (\l -> li [] [ text l ])
             |> ul []
         ]
 
 
+{-| update
+メッセージによってモデルの値を変換する
+
+Input
+入力ボックスの値が変更されたときのメッセージ
+メッセージの値を変換する
+
+send
+送信ボタンが押されたたときのメッセージ
+メッセージの値を空にする
+メッセージをウェブソケットサーバーに送信する
+
+Receive
+WebSocketサーバからメッセージを受信したときのメッセージ
+WebSocketサーバから受け取ったメッセージをメッセージリストの先頭に追加する
+
+-}
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Send ->
-            ( { model | message = "" }, WebSocket.send wsserver model.message )
-
-        --            ( { model
-        --                | messages = model.message :: model.messages
-        --                , message = ""
-        --              }
-        --            , Cmd.none
-        --            )
-        Change newMessage ->
+        -- メッセージ入力
+        Input newMessage ->
             ( { model | message = newMessage }, Cmd.none )
 
-        NewMessage str ->
+        -- 送信処理
+        Send ->
+            ( { model | message = "" }, WebSocket.send webSocketServerUrl model.message )
+
+        -- メッセージ受信
+        Receive str ->
             ( { model | messages = str :: model.messages }, Cmd.none )
 
 
-
--- SUBSCRIPTIONS
-
-
+{-| subscription
+WebSocketServerからのメッセージを購読
+-}
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    WebSocket.listen wsserver NewMessage
+    WebSocket.listen webSocketServerUrl Receive
 
 
-
--- MAIN
-
-
+{-| Main
+-}
 main : Program Never Model Msg
 main =
     program
@@ -96,7 +114,9 @@ main =
         }
 
 
-wsserver : String
-wsserver =
-    --    "ws://localhost:3000"
+{-| webSocketServerUrl
+WebSocketサーバーの定数
+-}
+webSocketServerUrl : String
+webSocketServerUrl =
     "ws://localhost:8080/chat"
